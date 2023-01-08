@@ -22,7 +22,11 @@ router.post(
   collectionsControllers.createCollection
 );
 
-router.patch("/:collectionId", collectionsControllers.updateCollection);
+router.patch(
+  "/:collectionId",
+  fileUpload.single("image"),
+  collectionsControllers.updateCollection
+);
 
 router.delete("/:collectionId", collectionsControllers.deleteCollection);
 

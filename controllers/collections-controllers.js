@@ -1,5 +1,6 @@
 const { validationResult } = require("express-validator");
 const mongoose = require("mongoose");
+const fs = require("fs");
 
 const HttpError = require("../models/http-error");
 const Collection = require("../models/collections-model");
@@ -94,7 +95,7 @@ const createCollection = async (req, res, next) => {
   if (!user)
     return next(new HttpError("Could not find user for provided id.", 404));
 
-  let coverPicture;
+  let coverPicture = "";
   if (req.file) coverPicture = req.file.path;
   else
     return next(
@@ -154,6 +155,13 @@ const updateCollection = async (req, res, next) => {
 
   if (name) updatedCollection.name = name;
   if (description) updatedCollection.description = description;
+
+  let oldCoverPicture = null;
+  if (req.file) {
+    oldCoverPicture = updatedCollection.coverPicture;
+    updatedCollection.coverPicture = req.file.path;
+  }
+
   updatedCollection.updateDate = new Date();
 
   try {
@@ -162,6 +170,12 @@ const updateCollection = async (req, res, next) => {
     return next(
       new HttpError("Something went wrong, could not update collection.", 500)
     );
+  }
+
+  if (!!oldCoverPicture) {
+    fs.unlink(oldCoverPicture, (err) => {
+      if (err) console.log(err);
+    });
   }
 
   res
@@ -179,7 +193,7 @@ const deleteCollection = async (req, res, next) => {
       .populate("itemList");
   } catch (err) {
     return next(
-      new HttpError("Something went wrong 1, could not delete collection.", 500)
+      new HttpError("Something went wrong, could not delete collection.", 500)
     );
   }
 
@@ -187,6 +201,12 @@ const deleteCollection = async (req, res, next) => {
     return next(
       new HttpError("Could not find a collection for the provided id.", 404)
     );
+
+  if (deletedCollection.creator.id !== req.userData.userId) {
+    return next(
+      new HttpError("Unathorized person can not delete this collection.", 500)
+    );
+  }
 
   try {
     const session = await mongoose.startSession();
@@ -201,6 +221,10 @@ const deleteCollection = async (req, res, next) => {
       new HttpError("Something went wrong, could not delete collection.", 500)
     );
   }
+
+  fs.unlink(deletedCollection.coverPicture, (err) => {
+    if (err) console.log(err);
+  });
 
   res.status(200).json({ message: "Collection deleted." });
 };
