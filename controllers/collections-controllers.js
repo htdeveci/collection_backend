@@ -135,6 +135,48 @@ const createCollection = async (req, res, next) => {
     .json({ collection: createdCollection.toObject({ getters: true }) });
 };
 
+const updateCoverPicture = async (req, res, next) => {
+  const collectionId = req.params.collectionId;
+
+  let updatedCollection;
+  try {
+    updatedCollection = await Collection.findById(collectionId);
+  } catch (err) {
+    return next(
+      new HttpError(
+        "Something went wrong, could not update cover picture.",
+        500
+      )
+    );
+  }
+
+  if (!updatedCollection)
+    return next(
+      new HttpError("Could not find a collection for the provided id.", 404)
+    );
+
+  let oldCoverPicture = updatedCollection.coverPicture;
+  updatedCollection.coverPicture = req.file.path;
+
+  try {
+    await updatedCollection.save();
+  } catch (err) {
+    return next(
+      new HttpError(
+        "Something went wrong, could not update cover picture.",
+        500
+      )
+    );
+  }
+
+  if (oldCoverPicture !== "")
+    fs.unlink(oldCoverPicture, (err) => {
+      if (err) console.log(err);
+    });
+
+  res.status(200).json(updatedCollection.toObject({ getters: true }));
+};
+
 const updateCollection = async (req, res, next) => {
   const { name, description } = req.body;
   const collectionId = req.params.collectionId;
@@ -233,5 +275,6 @@ exports.getAllCollections = getAllCollections;
 exports.getCollectionById = getCollectionById;
 exports.getCollectionsByUserId = getCollectionsByUserId;
 exports.createCollection = createCollection;
+exports.updateCoverPicture = updateCoverPicture;
 exports.updateCollection = updateCollection;
 exports.deleteCollection = deleteCollection;

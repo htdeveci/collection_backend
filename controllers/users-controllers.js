@@ -141,7 +141,7 @@ const updateProfilePicture = async (req, res, next) => {
 
   let updatedUser;
   try {
-    updatedUser = await User.findById(userId).populate("collectionList");
+    updatedUser = await User.findById(userId);
   } catch (err) {
     return next(
       new HttpError(

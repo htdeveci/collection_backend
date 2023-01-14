@@ -23,6 +23,12 @@ router.post(
 );
 
 router.patch(
+  "/changeCoverPicture/:collectionId",
+  fileUpload.single("image"),
+  collectionsControllers.updateCoverPicture
+);
+
+router.patch(
   "/:collectionId",
   fileUpload.single("image"),
   collectionsControllers.updateCollection
