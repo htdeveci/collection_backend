@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const { validationResult } = require("express-validator");
+const fs = require("fs");
 
 const HttpError = require("../models/http-error");
 const Item = require("../models/items-model");
@@ -10,7 +11,7 @@ const getItemById = async (req, res, next) => {
 
   let item;
   try {
-    item = await Item.findById(itemId);
+    item = await Item.findById(itemId).populate("collectionId", "name");
   } catch (err) {
     return next(
       new HttpError("Fetching item failed, please try again later.", 500)
@@ -65,12 +66,25 @@ const createItem = async (req, res, next) => {
     return next(err);
   }
 
+  if (!collection) {
+    return next(
+      new HttpError("Could not find a collection for provided id.", 404)
+    );
+  }
+
+  let coverPicture = "";
+  if (req.file) coverPicture = req.file.path;
+  else
+    return next(
+      new HttpError("Creating collection failed, please try again later.", 500)
+    );
+
   const createdItem = new Item({
     collectionId,
     name,
     creationDate: new Date(),
     updateDate: new Date(),
-    coverPicture: "",
+    coverPicture,
     description,
     mediaList: [],
   });
@@ -80,9 +94,14 @@ const createItem = async (req, res, next) => {
     session.startTransaction();
     await createdItem.save({ session });
     collection.itemList.push(createdItem);
+    collection.updateDate = new Date();
     await collection.save({ session });
     await session.commitTransaction();
   } catch (err) {
+    fs.unlink(coverPicture, (err) => {
+      if (err) console.log(err);
+    });
+
     const error = new HttpError("Creating item failed, please try again.", 500);
     return next(error);
   }
@@ -110,6 +129,13 @@ const updateItem = async (req, res, next) => {
 
   if (name) updatedItem.name = name;
   if (description) updatedItem.description = description;
+
+  let oldCoverPicture = null;
+  if (req.file) {
+    oldCoverPicture = updatedItem.coverPicture;
+    updatedItem.coverPicture = req.file.path;
+  }
+
   updatedItem.updateDate = new Date();
 
   // This change must be done lastly
@@ -154,36 +180,55 @@ const updateItem = async (req, res, next) => {
     }
   }
 
+  if (!!oldCoverPicture) {
+    fs.unlink(oldCoverPicture, (err) => {
+      if (err) console.log(err);
+    });
+  }
+
   res.status(200).json({ item: updatedItem.toObject({ getters: true }) });
 };
 
 const deleteItem = async (req, res, next) => {
   const itemId = req.params.itemId;
 
-  let item;
+  let deletedItem;
   try {
-    item = await Item.findById(itemId).populate("collectionId");
+    deletedItem = await Item.findById(itemId).populate("collectionId");
   } catch (err) {
     return next(
       new HttpError("Something went wrong, could not delete item.", 500)
     );
   }
 
-  if (!item) throw new HttpError("Could not find an item for that id.", 404);
+  if (!deletedItem)
+    throw new HttpError("Could not find an item for that id.", 404);
+
+  if (deletedItem.collectionId.creator.toString() !== req.userData.userId) {
+    console.log(deletedItem.collectionId.creator);
+    console.log(req.userData.userId);
+    return next(
+      new HttpError("Unathorized person can not delete this collection.", 500)
+    );
+  }
 
   try {
     const session = await mongoose.startSession();
     session.startTransaction();
-    await item.remove({ session });
-    item.collectionId.itemList.pull(item);
-    item.collectionId.updateDate = new Date();
-    await item.collectionId.save({ session });
+    await deletedItem.remove({ session });
+    deletedItem.collectionId.itemList.pull(deletedItem);
+    deletedItem.collectionId.updateDate = new Date();
+    await deletedItem.collectionId.save({ session });
     await session.commitTransaction();
   } catch (err) {
     return next(
       new HttpError("Something went wrong, could not delete item.", 500)
     );
   }
+
+  fs.unlink(deletedItem.coverPicture, (err) => {
+    if (err) console.log(err);
+  });
 
   res.status(200).json({ message: "Item deleted." });
 };

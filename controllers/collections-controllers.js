@@ -28,7 +28,9 @@ const getCollectionById = async (req, res, next) => {
 
   let collection;
   try {
-    collection = await Collection.findById(collectionId).populate("itemList");
+    collection = await Collection.findById(collectionId)
+      .populate("itemList")
+      .populate("creator", "username");
   } catch (err) {
     return next(
       new HttpError("Fetching collection failed, please try again later.", 500)
@@ -264,9 +266,17 @@ const deleteCollection = async (req, res, next) => {
     );
   }
 
-  fs.unlink(deletedCollection.coverPicture, (err) => {
-    if (err) console.log(err);
-  });
+  if (deletedCollection.coverPicture) {
+    fs.unlink(deletedCollection.coverPicture, (err) => {
+      if (err) console.log(err);
+    });
+  }
+
+  for (let i = 0; i < deletedCollection.itemList.length; i++) {
+    fs.unlink(deletedCollection.itemList[i].coverPicture, (err) => {
+      if (err) console.log(err);
+    });
+  }
 
   res.status(200).json({ message: "Collection deleted." });
 };
