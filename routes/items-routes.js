@@ -30,6 +30,12 @@ router.patch(
   itemControllers.updateItem
 );
 
+router.patch(
+  "/addMedia/:itemId",
+  fileUpload.single("image"),
+  itemControllers.addMediaToItem
+);
+
 router.delete("/:itemId", itemControllers.deleteItem);
 
 module.exports = router;

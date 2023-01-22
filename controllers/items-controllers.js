@@ -11,7 +11,7 @@ const getItemById = async (req, res, next) => {
 
   let item;
   try {
-    item = await Item.findById(itemId).populate("collectionId", "name");
+    item = await Item.findById(itemId).populate("collectionId", "name creator");
   } catch (err) {
     return next(
       new HttpError("Fetching item failed, please try again later.", 500)
@@ -72,6 +72,12 @@ const createItem = async (req, res, next) => {
     );
   }
 
+  if (collection.creator.toString() !== req.userData.userId) {
+    return next(
+      new HttpError("Unathorized person can not create new item.", 500)
+    );
+  }
+
   let coverPicture = "";
   if (req.file) coverPicture = req.file.path;
   else
@@ -98,10 +104,6 @@ const createItem = async (req, res, next) => {
     await collection.save({ session });
     await session.commitTransaction();
   } catch (err) {
-    fs.unlink(coverPicture, (err) => {
-      if (err) console.log(err);
-    });
-
     const error = new HttpError("Creating item failed, please try again.", 500);
     return next(error);
   }
@@ -115,7 +117,10 @@ const updateItem = async (req, res, next) => {
 
   let updatedItem;
   try {
-    updatedItem = await Item.findById(itemId);
+    updatedItem = await Item.findById(itemId).populate(
+      "collectionId",
+      "creator"
+    );
   } catch (err) {
     return next(
       new HttpError("Something went wrong, could not update item.", 500)
@@ -126,6 +131,12 @@ const updateItem = async (req, res, next) => {
     return next(
       new HttpError("Could not find an item for the provided id.", 404)
     );
+
+  if (updatedItem.collectionId.creator.toString() !== req.userData.userId) {
+    return next(
+      new HttpError("Unathorized person can not update this item.", 500)
+    );
+  }
 
   if (name) updatedItem.name = name;
   if (description) updatedItem.description = description;
@@ -189,6 +200,51 @@ const updateItem = async (req, res, next) => {
   res.status(200).json({ item: updatedItem.toObject({ getters: true }) });
 };
 
+const addMediaToItem = async (req, res, next) => {
+  const itemId = req.params.itemId;
+
+  let updatedItem;
+  try {
+    updatedItem = await Item.findById(itemId).populate(
+      "collectionId",
+      "creator updateDate"
+    );
+  } catch (err) {
+    return next(
+      new HttpError("Something went wrong, could not add new media.", 500)
+    );
+  }
+
+  if (!updatedItem)
+    return next(
+      new HttpError("Could not find an item for the provided id.", 404)
+    );
+
+  if (updatedItem.collectionId.creator.toString() !== req.userData.userId) {
+    return next(
+      new HttpError("Unathorized person can not update this item.", 500)
+    );
+  }
+
+  updatedItem.mediaList.push(req.file.path);
+  updatedItem.updateDate = new Date();
+
+  try {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    await updatedItem.save({ session });
+    updatedItem.collectionId.updateDate = new Date();
+    await updatedItem.collectionId.save({ session });
+    await session.commitTransaction();
+  } catch (err) {
+    return next(
+      new HttpError("Something went wrong, could not add new media.", 500)
+    );
+  }
+
+  res.status(200).json({ message: "Media added to item." });
+};
+
 const deleteItem = async (req, res, next) => {
   const itemId = req.params.itemId;
 
@@ -205,10 +261,8 @@ const deleteItem = async (req, res, next) => {
     throw new HttpError("Could not find an item for that id.", 404);
 
   if (deletedItem.collectionId.creator.toString() !== req.userData.userId) {
-    console.log(deletedItem.collectionId.creator);
-    console.log(req.userData.userId);
     return next(
-      new HttpError("Unathorized person can not delete this collection.", 500)
+      new HttpError("Unathorized person can not delete this item.", 500)
     );
   }
 
@@ -256,4 +310,5 @@ exports.getItemById = getItemById;
 exports.getItemsByCollectionId = getItemsByCollectionId;
 exports.createItem = createItem;
 exports.updateItem = updateItem;
+exports.addMediaToItem = addMediaToItem;
 exports.deleteItem = deleteItem;

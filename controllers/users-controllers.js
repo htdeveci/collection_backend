@@ -156,6 +156,12 @@ const updateProfilePicture = async (req, res, next) => {
       new HttpError("Could not find a user for the provided id.", 404)
     );
 
+  if (updatedUser.id.toString() !== req.userData.userId) {
+    return next(
+      new HttpError("Unathorized person can not update this user.", 500)
+    );
+  }
+
   let oldProfilePicture = updatedUser.profilePicture;
   updatedUser.profilePicture = req.file.path;
 
@@ -196,6 +202,12 @@ const updateUser = async (req, res, next) => {
       new HttpError("Could not find a user for the provided id.", 404)
     );
 
+  if (updatedUser.id.toString() !== req.userData.userId) {
+    return next(
+      new HttpError("Unathorized person can not update this user.", 500)
+    );
+  }
+
   if (username) updatedUser.username = username;
   if (email) updatedUser.email = email;
   if (password) updatedUser.password = password;
@@ -232,6 +244,12 @@ const deleteUser = async (req, res, next) => {
     return next(
       new HttpError("Could not find a user for the provided id.", 404)
     );
+
+  if (deletedUser.id.toString() !== req.userData.userId) {
+    return next(
+      new HttpError("Unathorized person can not delete this user.", 500)
+    );
+  }
 
   try {
     const session = await mongoose.startSession();

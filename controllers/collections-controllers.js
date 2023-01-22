@@ -121,10 +121,6 @@ const createCollection = async (req, res, next) => {
     await user.save({ session });
     await session.commitTransaction();
   } catch (err) {
-    fs.unlink(coverPicture, (err) => {
-      if (err) console.log(err);
-    });
-
     const error = new HttpError(
       "Creating collection failed, please try again.",
       500
@@ -156,6 +152,12 @@ const updateCoverPicture = async (req, res, next) => {
     return next(
       new HttpError("Could not find a collection for the provided id.", 404)
     );
+
+  if (updatedCollection.creator.toString() !== req.userData.userId) {
+    return next(
+      new HttpError("Unathorized person can not update this collection.", 500)
+    );
+  }
 
   let oldCoverPicture = updatedCollection.coverPicture;
   updatedCollection.coverPicture = req.file.path;
@@ -196,6 +198,12 @@ const updateCollection = async (req, res, next) => {
     return next(
       new HttpError("Could not find a collection for the provided id.", 404)
     );
+
+  if (updatedCollection.creator.toString() !== req.userData.userId) {
+    return next(
+      new HttpError("Unathorized person can not update this collection.", 500)
+    );
+  }
 
   if (name) updatedCollection.name = name;
   if (description) updatedCollection.description = description;
@@ -246,7 +254,7 @@ const deleteCollection = async (req, res, next) => {
       new HttpError("Could not find a collection for the provided id.", 404)
     );
 
-  if (deletedCollection.creator.id !== req.userData.userId) {
+  if (deletedCollection.creator.id.toString() !== req.userData.userId) {
     return next(
       new HttpError("Unathorized person can not delete this collection.", 500)
     );
