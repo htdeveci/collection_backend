@@ -6,7 +6,6 @@ const itemSchema = new Schema({
   name: { type: String, reqired: true },
   creationDate: { type: Date },
   updateDate: { type: Date },
-  coverPicture: { type: String, reqired: true },
   description: { type: String, reqired: true },
   mediaList: [{ type: String }],
   collectionId: {

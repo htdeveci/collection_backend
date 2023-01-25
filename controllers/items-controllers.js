@@ -90,9 +90,8 @@ const createItem = async (req, res, next) => {
     name,
     creationDate: new Date(),
     updateDate: new Date(),
-    coverPicture,
     description,
-    mediaList: [],
+    mediaList: [coverPicture],
   });
 
   try {
@@ -143,8 +142,8 @@ const updateItem = async (req, res, next) => {
 
   let oldCoverPicture = null;
   if (req.file) {
-    oldCoverPicture = updatedItem.coverPicture;
-    updatedItem.coverPicture = req.file.path;
+    oldCoverPicture = updatedItem.mediaList[0];
+    updatedItem.mediaList[0] = req.file.path;
   }
 
   updatedItem.updateDate = new Date();
@@ -280,8 +279,10 @@ const deleteItem = async (req, res, next) => {
     );
   }
 
-  fs.unlink(deletedItem.coverPicture, (err) => {
-    if (err) console.log(err);
+  deletedItem.mediaList.forEach((media) => {
+    fs.unlink(media, (err) => {
+      if (err) console.log(err);
+    });
   });
 
   res.status(200).json({ message: "Item deleted." });

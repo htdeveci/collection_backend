@@ -280,11 +280,13 @@ const deleteCollection = async (req, res, next) => {
     });
   }
 
-  for (let i = 0; i < deletedCollection.itemList.length; i++) {
-    fs.unlink(deletedCollection.itemList[i].coverPicture, (err) => {
-      if (err) console.log(err);
+  deletedCollection.itemList.forEach((item) => {
+    item.mediaList.forEach((media) => {
+      fs.unlink(media, (err) => {
+        if (err) console.log(err);
+      });
     });
-  }
+  });
 
   res.status(200).json({ message: "Collection deleted." });
 };
