@@ -244,6 +244,54 @@ const addMediaToItem = async (req, res, next) => {
   res.status(200).json({ message: "Media added to item." });
 };
 
+const deleteMediaByName = async (req, res, next) => {
+  const itemId = req.params.itemId;
+  const mediaName = "uploads\\images\\" + req.params.mediaName;
+
+  let deletedMediaItem;
+  try {
+    deletedMediaItem = await Item.findById(itemId).populate("collectionId");
+  } catch (err) {
+    return next(
+      new HttpError("Something went wrong, could not delete media.", 500)
+    );
+  }
+
+  if (!deletedMediaItem)
+    throw new HttpError("Could not find an item for that id.", 404);
+
+  if (
+    deletedMediaItem.collectionId.creator.toString() !== req.userData.userId
+  ) {
+    return next(
+      new HttpError("Unathorized person can not delete this media.", 500)
+    );
+  }
+
+  try {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    deletedMediaItem.mediaList = deletedMediaItem.mediaList.filter(
+      (media) => media !== mediaName
+    );
+    deletedMediaItem.updateDate = new Date();
+    await deletedMediaItem.save({ session });
+    deletedMediaItem.collectionId.updateDate = new Date();
+    await deletedMediaItem.collectionId.save({ session });
+    await session.commitTransaction();
+  } catch (err) {
+    return next(
+      new HttpError("Something went wrong, could not delete item.", 500)
+    );
+  }
+
+  fs.unlink(mediaName, (err) => {
+    if (err) console.log(err);
+  });
+
+  res.status(200).json({ message: "Media deleted." });
+};
+
 const deleteItem = async (req, res, next) => {
   const itemId = req.params.itemId;
 
@@ -312,4 +360,5 @@ exports.getItemsByCollectionId = getItemsByCollectionId;
 exports.createItem = createItem;
 exports.updateItem = updateItem;
 exports.addMediaToItem = addMediaToItem;
+exports.deleteMediaByName = deleteMediaByName;
 exports.deleteItem = deleteItem;

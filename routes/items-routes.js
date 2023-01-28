@@ -36,6 +36,8 @@ router.patch(
   itemControllers.addMediaToItem
 );
 
+router.delete("/:itemId/media/:mediaName", itemControllers.deleteMediaByName);
+
 router.delete("/:itemId", itemControllers.deleteItem);
 
 module.exports = router;
