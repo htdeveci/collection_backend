@@ -7,9 +7,13 @@ const Collection = require("../models/collections-model");
 const User = require("../models/users-model");
 
 const getAllCollections = async (req, res, next) => {
+  let userId = req.userData ? req.userData.userId : null;
+
   let collections;
   try {
-    collections = await Collection.find({});
+    collections = await Collection.find({
+      $or: [{ creator: userId }, { visibility: "everyone" }],
+    });
   } catch (err) {
     return next(
       new HttpError("Fetching collections failed, please try again later.", 500)
@@ -29,7 +33,7 @@ const getCollectionById = async (req, res, next) => {
   let collection;
   try {
     collection = await Collection.findById(collectionId)
-      .populate("itemList")
+      .populate({ path: "itemList", options: { sort: { creationDate: -1 } } })
       .populate("creator", "username");
   } catch (err) {
     return next(
@@ -51,7 +55,9 @@ const getCollectionsByUserId = async (req, res, next) => {
 
   let collections;
   try {
-    collections = await Collection.find({ creator: userId });
+    collections = await Collection.find({ creator: userId }).sort({
+      creationDate: -1,
+    });
   } catch (err) {
     return next(
       new HttpError("Fetching collections failed, please try again later.", 500)
@@ -82,7 +88,7 @@ const createCollection = async (req, res, next) => {
       new HttpError("Invalid inputs passed, please check your data.", 422)
     );
 
-  const { name, description } = req.body;
+  const { name, description, visibility } = req.body;
   const userId = req.userData.userId;
 
   let user;
@@ -107,6 +113,7 @@ const createCollection = async (req, res, next) => {
   const createdCollection = new Collection({
     name,
     description,
+    visibility,
     creator: userId,
     creationDate: new Date(),
     updateDate: new Date(),
@@ -182,7 +189,7 @@ const updateCoverPicture = async (req, res, next) => {
 };
 
 const updateCollection = async (req, res, next) => {
-  const { name, description } = req.body;
+  const { name, description, visibility } = req.body;
   const collectionId = req.params.collectionId;
 
   let updatedCollection;
@@ -207,6 +214,7 @@ const updateCollection = async (req, res, next) => {
 
   if (name) updatedCollection.name = name;
   if (description) updatedCollection.description = description;
+  if (visibility) updatedCollection.visibility = visibility;
 
   let oldCoverPicture = null;
   if (req.file) {

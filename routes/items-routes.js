@@ -2,7 +2,7 @@ const Router = require("express");
 const { check } = require("express-validator");
 
 const itemControllers = require("../controllers/items-controllers");
-const checkAuth = require("../middleware/check-auth");
+const { checkAuth } = require("../middleware/check-auth");
 const fileUpload = require("../middleware/file-upload");
 
 const router = Router();
@@ -20,6 +20,7 @@ router.post(
     check("name").not().isEmpty(),
     check("description").not().isEmpty(),
     check("collectionId").not().isEmpty(),
+    check("visibility").not().isEmpty(),
   ],
   itemControllers.createItem
 );

@@ -12,7 +12,10 @@ const getUserById = async (req, res, next) => {
 
   let user;
   try {
-    user = await User.findById(userId, "-password").populate("collectionList");
+    user = await User.findById(userId, "-password").populate({
+      path: "collectionList",
+      options: { sort: { creationDate: -1 } },
+    });
   } catch (err) {
     return next(
       new HttpError("Fetching user failed, please try again later.", 500)
@@ -21,6 +24,14 @@ const getUserById = async (req, res, next) => {
 
   if (!user)
     return next(new HttpError("Could not find a user by provided id.", 404));
+
+  const loggedInUserId = req.userData ? req.userData.userId : null;
+  user.collectionList = user.collectionList.filter((col) => {
+    if (col.visibility === "everyone") return col;
+    else if (col.creator.toString() === loggedInUserId) {
+      return col;
+    }
+  });
 
   res.status(200).json(user.toObject({ getters: true }));
 };

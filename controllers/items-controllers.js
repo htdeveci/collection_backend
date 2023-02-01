@@ -57,7 +57,7 @@ const createItem = async (req, res, next) => {
       new HttpError("Invalid inputs passed, please check your data.", 422)
     );
 
-  const { name, description, collectionId } = req.body;
+  const { name, description, collectionId, visibility } = req.body;
 
   let collection;
   try {
@@ -88,6 +88,7 @@ const createItem = async (req, res, next) => {
   const createdItem = new Item({
     collectionId,
     name,
+    visibility,
     creationDate: new Date(),
     updateDate: new Date(),
     description,
@@ -111,7 +112,7 @@ const createItem = async (req, res, next) => {
 };
 
 const updateItem = async (req, res, next) => {
-  const { name, description, collectionId } = req.body;
+  const { name, description, collectionId, visibility } = req.body;
   const itemId = req.params.itemId;
 
   let updatedItem;
@@ -139,6 +140,7 @@ const updateItem = async (req, res, next) => {
 
   if (name) updatedItem.name = name;
   if (description) updatedItem.description = description;
+  if (visibility) updatedItem.visibility = visibility;
 
   let oldCoverPicture = null;
   if (req.file) {

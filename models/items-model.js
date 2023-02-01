@@ -7,6 +7,7 @@ const itemSchema = new Schema({
   creationDate: { type: Date },
   updateDate: { type: Date },
   description: { type: String, reqired: true },
+  visibility: { type: String, reqired: true },
   mediaList: [{ type: String }],
   collectionId: {
     type: mongoose.Types.ObjectId,

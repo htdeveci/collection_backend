@@ -8,6 +8,7 @@ const collectionSchema = new Schema({
   updateDate: { type: Date },
   coverPicture: { type: String, reqired: true },
   description: { type: String, reqired: true },
+  visibility: { type: String, reqired: true },
   creator: { type: mongoose.Types.ObjectId, reqired: true, ref: "User" },
   itemList: [{ type: mongoose.Types.ObjectId, ref: "Item" }],
 });

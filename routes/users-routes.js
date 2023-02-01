@@ -2,10 +2,15 @@ const Router = require("express");
 const { check } = require("express-validator");
 
 const usersControllers = require("../controllers/users-controllers");
-const checkAuth = require("../middleware/check-auth");
+const {
+  checkAuth,
+  checkAuthForVisibility,
+} = require("../middleware/check-auth");
 const fileUpload = require("../middleware/file-upload");
 
 const router = Router();
+
+router.use(checkAuthForVisibility);
 
 router.get("/:userId", usersControllers.getUserById);
 
