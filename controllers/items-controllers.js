@@ -24,6 +24,21 @@ const getItemById = async (req, res, next) => {
     );
   }
 
+  if (item.visibility !== "everyone") {
+    if (req.userData) {
+      const userId = req.userData.userId;
+      if (userId !== item.collectionId.creator.toString()) {
+        return next(
+          new HttpError("Unauthorized people can not see this collection.", 401)
+        );
+      }
+    } else {
+      return next(
+        new HttpError("Unauthorized people can not see this collection.", 401)
+      );
+    }
+  }
+
   res.status(200).json(item.toObject({ getters: true }));
 };
 

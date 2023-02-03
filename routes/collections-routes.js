@@ -17,7 +17,7 @@ router.get("/", collectionsControllers.getAllCollections);
 
 router.get("/:collectionId", collectionsControllers.getCollectionById);
 
-// This route is not used
+// This route is never used
 router.get("/user/:userId", collectionsControllers.getCollectionsByUserId);
 
 router.use(checkAuth);

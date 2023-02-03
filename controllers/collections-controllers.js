@@ -13,7 +13,7 @@ const getAllCollections = async (req, res, next) => {
   try {
     collections = await Collection.find({
       $or: [{ creator: userId }, { visibility: "everyone" }],
-    });
+    }).sort({ creationDate: -1 });
   } catch (err) {
     return next(
       new HttpError("Fetching collections failed, please try again later.", 500)
@@ -46,6 +46,29 @@ const getCollectionById = async (req, res, next) => {
       new HttpError("Could not find a collection for the provided id.", 404)
     );
   }
+
+  if (collection.visibility !== "everyone") {
+    if (req.userData) {
+      const userId = req.userData.userId;
+      if (userId !== collection.creator.id) {
+        return next(
+          new HttpError("Unauthorized people can not see this collection.", 401)
+        );
+      }
+    } else {
+      return next(
+        new HttpError("Unauthorized people can not see this collection.", 401)
+      );
+    }
+  }
+
+  collection.itemList = collection.itemList.filter((item) => {
+    if (item.visibility === "everyone") return item;
+    else if (req.userData) {
+      const userId = req.userData.userId;
+      if (userId === collection.creator.id) return item;
+    }
+  });
 
   res.status(200).json(collection.toObject({ getters: true }));
 };
