@@ -10,6 +10,10 @@ const userSchema = new Schema({
   registerationDate: { type: Date },
   profilePicture: { type: String, reqired: true },
   collectionList: [{ type: mongoose.Types.ObjectId, ref: "Collection" }],
+  favoriteCollectionList: [
+    { type: mongoose.Types.ObjectId, ref: "Collection" },
+  ],
+  favoriteItemList: [{ type: mongoose.Types.ObjectId, ref: "Item" }],
 });
 
 userSchema.plugin(uniqueValidator);

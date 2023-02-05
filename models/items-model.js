@@ -14,6 +14,7 @@ const itemSchema = new Schema({
     reqired: true,
     ref: "Collection",
   },
+  favoriteByUserList: [{ type: mongoose.Types.ObjectId, ref: "User" }],
 });
 
 module.exports = mongoose.model("Item", itemSchema);

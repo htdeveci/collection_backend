@@ -31,15 +31,17 @@ router.post(
 );
 
 router.patch(
-  "/:itemId",
-  fileUpload.single("image"),
-  itemControllers.updateItem
-);
-
-router.patch(
   "/addMedia/:itemId",
   fileUpload.single("image"),
   itemControllers.addMediaToItem
+);
+
+router.patch("/favorite/:itemId", itemControllers.toggleItemFavoriteStatus);
+
+router.patch(
+  "/:itemId",
+  fileUpload.single("image"),
+  itemControllers.updateItem
 );
 
 router.delete("/:itemId/media/:mediaName", itemControllers.deleteMediaByName);

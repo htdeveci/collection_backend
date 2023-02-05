@@ -11,6 +11,7 @@ const collectionSchema = new Schema({
   visibility: { type: String, reqired: true },
   creator: { type: mongoose.Types.ObjectId, reqired: true, ref: "User" },
   itemList: [{ type: mongoose.Types.ObjectId, ref: "Item" }],
+  favoriteByUserList: [{ type: mongoose.Types.ObjectId, ref: "User" }],
 });
 
 module.exports = mongoose.model("Collection", collectionSchema);

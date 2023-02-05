@@ -34,7 +34,7 @@ const getCollectionById = async (req, res, next) => {
   try {
     collection = await Collection.findById(collectionId)
       .populate({ path: "itemList", options: { sort: { creationDate: -1 } } })
-      .populate("creator", "username");
+      .populate("creator", "username favoriteCollectionList favoriteItemList");
   } catch (err) {
     return next(
       new HttpError("Fetching collection failed, please try again later.", 500)
@@ -211,6 +211,63 @@ const updateCoverPicture = async (req, res, next) => {
   res.status(200).json(updatedCollection.toObject({ getters: true }));
 };
 
+const toggleCollectionFavoriteStatus = async (req, res, next) => {
+  const collectionId = req.params.collectionId;
+  const userId = req.userData.userId;
+
+  let updatedCollection;
+  try {
+    updatedCollection = await Collection.findById(collectionId);
+  } catch (err) {
+    return next(
+      new HttpError(
+        "Something went wrong, could not change favorite status.",
+        500
+      )
+    );
+  }
+
+  if (!updatedCollection)
+    return next(
+      new HttpError("Could not find a collection for the provided id.", 404)
+    );
+
+  try {
+    const user = await User.findById(userId);
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    const isFavorite = user.favoriteCollectionList.find(
+      (col) => col.toString() === collectionId
+    );
+    if (isFavorite) {
+      updatedCollection.favoriteByUserList =
+        updatedCollection.favoriteByUserList.filter(
+          (user) => user.toString() !== userId
+        );
+      user.favoriteCollectionList = user.favoriteCollectionList.filter(
+        (collection) => collection.toString() !== collectionId
+      );
+    } else {
+      updatedCollection.favoriteByUserList.push(userId);
+      user.favoriteCollectionList.push(collectionId);
+    }
+    await user.save({ session });
+    await updatedCollection.save({ session });
+    await session.commitTransaction();
+  } catch (err) {
+    return next(
+      new HttpError(
+        "Something went wrong, could not change favorite status this collection.",
+        500
+      )
+    );
+  }
+
+  res
+    .status(200)
+    .json({ favoriteCount: updatedCollection.favoriteByUserList.length });
+};
+
 const updateCollection = async (req, res, next) => {
   const { name, description, visibility } = req.body;
   const collectionId = req.params.collectionId;
@@ -327,5 +384,6 @@ exports.getCollectionById = getCollectionById;
 exports.getCollectionsByUserId = getCollectionsByUserId;
 exports.createCollection = createCollection;
 exports.updateCoverPicture = updateCoverPicture;
+exports.toggleCollectionFavoriteStatus = toggleCollectionFavoriteStatus;
 exports.updateCollection = updateCollection;
 exports.deleteCollection = deleteCollection;

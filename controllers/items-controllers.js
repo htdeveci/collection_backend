@@ -5,6 +5,7 @@ const fs = require("fs");
 const HttpError = require("../models/http-error");
 const Item = require("../models/items-model");
 const Collection = require("../models/collections-model");
+const User = require("../models/users-model");
 
 const getItemById = async (req, res, next) => {
   const itemId = req.params.itemId;
@@ -124,6 +125,65 @@ const createItem = async (req, res, next) => {
   }
 
   res.status(201).json({ item: createdItem.toObject({ getters: true }) });
+};
+
+const toggleItemFavoriteStatus = async (req, res, next) => {
+  const itemId = req.params.itemId;
+  const userId = req.userData.userId;
+
+  let updatedItem;
+  try {
+    updatedItem = await Item.findById(itemId).populate(
+      "collectionId",
+      "creator"
+    );
+  } catch (err) {
+    return next(
+      new HttpError(
+        "Something went wrong, could not change favorite status this item.",
+        500
+      )
+    );
+  }
+
+  if (!updatedItem)
+    return next(
+      new HttpError("Could not find an item for the provided id.", 404)
+    );
+
+  try {
+    const user = await User.findById(userId);
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    const isFavorite = user.favoriteItemList.find(
+      (item) => item.toString() === itemId
+    );
+    if (isFavorite) {
+      updatedItem.favoriteByUserList = updatedItem.favoriteByUserList.filter(
+        (user) => user.toString() !== userId
+      );
+      user.favoriteItemList = user.favoriteItemList.filter(
+        (item) => item.toString() !== itemId
+      );
+    } else {
+      updatedItem.favoriteByUserList.push(userId);
+      user.favoriteItemList.push(itemId);
+    }
+    await user.save({ session });
+    await updatedItem.save({ session });
+    await session.commitTransaction();
+  } catch (err) {
+    return next(
+      new HttpError(
+        "Something went wrong, could not change favorite status this item.",
+        500
+      )
+    );
+  }
+
+  res
+    .status(200)
+    .json({ favoriteCount: updatedItem.favoriteByUserList.length });
 };
 
 const updateItem = async (req, res, next) => {
@@ -376,6 +436,7 @@ exports.getItemById = getItemById;
 exports.getItemsByCollectionId = getItemsByCollectionId;
 exports.createItem = createItem;
 exports.updateItem = updateItem;
+exports.toggleItemFavoriteStatus = toggleItemFavoriteStatus;
 exports.addMediaToItem = addMediaToItem;
 exports.deleteMediaByName = deleteMediaByName;
 exports.deleteItem = deleteItem;

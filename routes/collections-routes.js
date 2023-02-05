@@ -40,6 +40,11 @@ router.patch(
 );
 
 router.patch(
+  "/favorite/:collectionId",
+  collectionsControllers.toggleCollectionFavoriteStatus
+);
+
+router.patch(
   "/:collectionId",
   fileUpload.single("image"),
   collectionsControllers.updateCollection
