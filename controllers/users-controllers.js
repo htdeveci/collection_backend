@@ -12,10 +12,13 @@ const getUserById = async (req, res, next) => {
 
   let user;
   try {
-    user = await User.findById(userId, "-password").populate({
-      path: "collectionList",
-      options: { sort: { creationDate: -1 } },
-    });
+    user = await User.findById(userId, "-password")
+      .populate({
+        path: "collectionList",
+        options: { sort: { creationDate: -1 } },
+      })
+      .populate("favoriteCollectionList")
+      .populate("favoriteItemList");
   } catch (err) {
     return next(
       new HttpError("Fetching user failed, please try again later.", 500)
@@ -283,8 +286,12 @@ const deleteUser = async (req, res, next) => {
 };
 
 const generateToken = (payload, error = HttpError) => {
+  console.log("asafgwe");
+  console.log(process.env.JWT_KEY);
+  console.log(process.env.DB_NAME);
+  console.log(process.env.DB_USER);
   try {
-    const token = jwt.sign(payload, "secret-key", {
+    const token = jwt.sign(payload, process.env.JWT_KEY, {
       expiresIn: "1h",
     });
     return token;

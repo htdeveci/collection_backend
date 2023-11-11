@@ -49,7 +49,7 @@ app.use((error, req, res, next) => {
 
 mongoose
   .connect(
-    "mongodb+srv://asafgwe:ZbQwWLak09M6bd2T@cluster0.9fb6jne.mongodb.net/collection_db__test?retryWrites=true&w=majority"
+    `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.9fb6jne.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`
   )
   .then(() => app.listen(5000))
   .catch((err) => console.log(err));
