@@ -286,10 +286,6 @@ const deleteUser = async (req, res, next) => {
 };
 
 const generateToken = (payload, error = HttpError) => {
-  console.log("asafgwe");
-  console.log(process.env.JWT_KEY);
-  console.log(process.env.DB_NAME);
-  console.log(process.env.DB_USER);
   try {
     const token = jwt.sign(payload, process.env.JWT_KEY, {
       expiresIn: "1h",

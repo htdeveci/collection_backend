@@ -3,6 +3,7 @@
     "DB_USER": "asafgwe",
     "DB_PASSWORD": "ZbQwWLak09M6bd2T",
     "DB_NAME": "collection_db__test",
-    "JWT_KEY": "super-secret-key"
+    "JWT_KEY": "super-secret-key",
+    "ALLOW_ORIGIN": "*"
   }
 }
